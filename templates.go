@@ -15,8 +15,8 @@ import (
 type {{.Name}}Repository interface {
     Create(ctx context.Context, m *model.{{.Name}}) error
     BatchCreate(ctx context.Context, ms []*model.{{.Name}}) error
-    Update(ctx context.Context, id int64, m *model.{{.Name}}) error
-    UpdateByCondition(ctx context.Context, condition map[string]interface{}, m *model.{{.Name}}) error
+    Update(ctx context.Context, id int64, updates map[string]interface{}) error
+    UpdateByCondition(ctx context.Context, condition map[string]interface{}, updates map[string]interface{}) error
     Delete(ctx context.Context, id int64) error
     DeleteByCondition(ctx context.Context, condition map[string]interface{}) error
     Get(ctx context.Context, id int64) (*model.{{.Name}}, error)
@@ -52,8 +52,8 @@ func (r *{{.Name | toLower}}Repository) BatchCreate(ctx context.Context, ms []*m
 }
 
 // Update 更新单条记录
-func (r *{{.Name | toLower}}Repository) Update(ctx context.Context, id int64, m *model.{{.Name}}) error {
-    result := r.db.WithContext(ctx).Model(&model.{{.Name}}{}).Where("id = ?", id).Updates(m)
+func (r *{{.Name | toLower}}Repository) Update(ctx context.Context, id int64, updates map[string]interface{}) error {
+    result := r.db.WithContext(ctx).Model(&model.{{.Name}}{}).Where("id = ?", id).Updates(updates)
     if err := result.Error; err != nil {
         return errcode.Wrap(err, "更新{{.Name}}记录失败")
     }
@@ -64,8 +64,8 @@ func (r *{{.Name | toLower}}Repository) Update(ctx context.Context, id int64, m 
 }
 
 // UpdateByCondition 条件更新
-func (r *{{.Name | toLower}}Repository) UpdateByCondition(ctx context.Context, condition map[string]interface{}, m *model.{{.Name}}) error {
-    if err := r.db.WithContext(ctx).Model(&model.{{.Name}}{}).Where(condition).Updates(m).Error; err != nil {
+func (r *{{.Name | toLower}}Repository) UpdateByCondition(ctx context.Context, condition map[string]interface{}, updates map[string]interface{}) error {
+    if err := r.db.WithContext(ctx).Model(&model.{{.Name}}{}).Where(condition).Updates(updates).Error; err != nil {
         return errcode.Wrap(err, "条件更新{{.Name}}记录失败")
     }
     return nil
@@ -174,10 +174,8 @@ func (s *{{.Name | toLower}}Service) Create(ctx context.Context, req *{{.Name}}C
 
 // Update 更新
 func (s *{{.Name | toLower}}Service) Update(ctx context.Context, id int64, req *{{.Name}}UpdateRequest) error {
-    model := &model.{{.Name}}{
-        // TODO: 从请求中复制字段到model
-    }
-    if err := s.repo.Update(ctx, id, model); err != nil {
+    updates := map[string]interface{}{
+    if err := s.repo.Update(ctx, id, updates); err != nil {
         return errcode.Wrap(err, "更新{{.Name}}失败")
     }
     return nil
@@ -245,7 +243,7 @@ func New{{.Name}}Handler(svc service.{{.Name}}Service) *{{.Name}}Handler {
 }
 
 // Route implements the Router interface
-func (h *{{ .Name }}Handler) Route(e *gin.Engine) {
+func (h *{{ .Name }}Handler) RegisterRouter(e *gin.Engine) {
 	g := e.Group("/{{ .Name | toLower }}")
 	g.POST("", h.Create)
 	g.PUT("/:id", h.Update)

@@ -181,6 +181,14 @@ func generateForStruct(cfg Config, st *Struct) error {
 	}
 
 	for _, g := range generators {
+		// 检查文件是否已存在
+		outputFile := filepath.Join("internal", g.outputDir, fmt.Sprintf("%s_%s.go", strings.ToLower(st.Name), g.outputDir))
+		if _, err := os.Stat(outputFile); err == nil {
+			// 文件已存在，跳过生成
+			fmt.Printf("文件已存在，跳过生成: %s\n", outputFile)
+			continue
+		}
+
 		if err := g.generate(st); err != nil {
 			return fmt.Errorf("生成%s代码失败: %w", g.templateName, err)
 		}
